@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Wi-Fi P2P</title>
+    <title>Chat Wi-Fi Rapide</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        #chat { height: 200px; border: 1px solid #ddd; overflow-y: scroll; margin: 10px 0; padding: 10px; text-align: left; background: #fafafa; }
-        input { width: 80%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
-        .id-box { font-size: 12px; color: #666; word-break: break-all; background: #eee; padding: 5px; margin: 10px 0; }
+        #chat { height: 250px; border: 1px solid #ddd; overflow-y: auto; margin: 15px 0; padding: 10px; text-align: left; background: #fafafa; border-radius: 8px; }
+        input { width: 85%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        button { padding: 12px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; width: 90%; }
+        .id-display { font-size: 32px; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 10px; border-radius: 8px; margin: 10px 0; letter-spacing: 5px; }
+        .msg-moi { color: #007bff; margin-bottom: 5px; }
+        .msg-ami { color: #333; margin-bottom: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -19,61 +21,75 @@
     <h2>Messagerie Wi-Fi</h2>
     
     <div id="setup">
-        <p>Ton ID :</p>
-        <div id="my-id" class="id-box">Génération...</div>
-        <input type="text" id="peer-id" placeholder="Coller l'ID de l'ami ici">
-        <button onclick="connecter()">Se connecter</button>
+        <p>Ton code de connexion :</p>
+        <div id="my-id" class="id-display">....</div>
+        
+        <p>Entrer le code de l'ami :</p>
+        <input type="text" id="peer-id" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 1234">
+        <button onclick="connecter()">SE CONNECTER</button>
     </div>
 
     <div id="chat-box" style="display:none;">
         <div id="chat"></div>
-        <input type="text" id="message" placeholder="Message...">
-        <button onclick="envoyer()">Envoyer</button>
+        <input type="text" id="message" placeholder="Ton message...">
+        <button onclick="envoyer()">ENVOYER</button>
     </div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-    let peer = new Peer(); 
+    // Génération d'un ID de 4 chiffres aléatoires
+    const monId = Math.floor(1000 + Math.random() * 9000).toString();
+    const peer = new Peer(monId); 
     let conn;
 
-    // 1. Afficher mon ID
     peer.on('open', (id) => {
         document.getElementById('my-id').innerText = id;
     });
 
-    // 2. Attendre une connexion entrante
+    // Écouter si quelqu'un se connecte à nous
     peer.on('connection', (c) => {
         conn = c;
-        setupChat();
+        activerInterfaceChat();
     });
 
-    // 3. Fonction pour se connecter à un ami
     function connecter() {
         const idAmi = document.getElementById('peer-id').value;
+        if (!idAmi) return alert("Entrer un code !");
+        
         conn = peer.connect(idAmi);
-        setupChat();
+        activerInterfaceChat();
     }
 
-    function setupChat() {
+    function activerInterfaceChat() {
         document.getElementById('setup').style.display = 'none';
         document.getElementById('chat-box').style.display = 'block';
 
         conn.on('data', (data) => {
-            afficherMessage("Ami: " + data);
+            afficherMessage(data, 'ami');
+        });
+
+        conn.on('open', () => {
+            afficherMessage("Connecté à l'ami !", 'systeme');
         });
     }
 
     function envoyer() {
-        const msg = document.getElementById('message').value;
-        conn.send(msg);
-        afficherMessage("Moi: " + msg);
-        document.getElementById('message').value = "";
+        const input = document.getElementById('message');
+        const msg = input.value;
+        if (msg && conn) {
+            conn.send(msg);
+            afficherMessage(msg, 'moi');
+            input.value = "";
+        }
     }
 
-    function afficherMessage(msg) {
+    function afficherMessage(msg, type) {
         const chat = document.getElementById('chat');
-        chat.innerHTML += `<div>${msg}</div>`;
+        const prefix = type === 'moi' ? "Moi : " : (type === 'ami' ? "Ami : " : "");
+        const classe = type === 'moi' ? "msg-moi" : "msg-ami";
+        
+        chat.innerHTML += `<div class="${classe}">${prefix}${msg}</div>`;
         chat.scrollTop = chat.scrollHeight;
     }
 </script>
