@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Wi-Fi P2P</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        #chat { height: 200px; border: 1px solid #ddd; overflow-y: scroll; margin: 10px 0; padding: 10px; text-align: left; background: #fafafa; }
+        input { width: 80%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        .id-box { font-size: 12px; color: #666; word-break: break-all; background: #eee; padding: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Messagerie Wi-Fi</h2>
+    
+    <div id="setup">
+        <p>Ton ID :</p>
+        <div id="my-id" class="id-box">Génération...</div>
+        <input type="text" id="peer-id" placeholder="Coller l'ID de l'ami ici">
+        <button onclick="connecter()">Se connecter</button>
+    </div>
+
+    <div id="chat-box" style="display:none;">
+        <div id="chat"></div>
+        <input type="text" id="message" placeholder="Message...">
+        <button onclick="envoyer()">Envoyer</button>
+    </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>
+    let peer = new Peer(); 
+    let conn;
+
+    // 1. Afficher mon ID
+    peer.on('open', (id) => {
+        document.getElementById('my-id').innerText = id;
+    });
+
+    // 2. Attendre une connexion entrante
+    peer.on('connection', (c) => {
+        conn = c;
+        setupChat();
+    });
+
+    // 3. Fonction pour se connecter à un ami
+    function connecter() {
+        const idAmi = document.getElementById('peer-id').value;
+        conn = peer.connect(idAmi);
+        setupChat();
+    }
+
+    function setupChat() {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('chat-box').style.display = 'block';
+
+        conn.on('data', (data) => {
+            afficherMessage("Ami: " + data);
+        });
+    }
+
+    function envoyer() {
+        const msg = document.getElementById('message').value;
+        conn.send(msg);
+        afficherMessage("Moi: " + msg);
+        document.getElementById('message').value = "";
+    }
+
+    function afficherMessage(msg) {
+        const chat = document.getElementById('chat');
+        chat.innerHTML += `<div>${msg}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
