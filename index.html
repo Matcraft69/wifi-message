@@ -3,60 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Wi-Fi Rapide</title>
+    <title>Chat Wi-Fi & Images</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        #chat { height: 250px; border: 1px solid #ddd; overflow-y: auto; margin: 15px 0; padding: 10px; text-align: left; background: #fafafa; border-radius: 8px; }
-        input { width: 85%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
-        button { padding: 12px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; width: 90%; }
-        .id-display { font-size: 32px; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 10px; border-radius: 8px; margin: 10px 0; letter-spacing: 5px; }
-        .msg-moi { color: #007bff; margin-bottom: 5px; }
-        .msg-ami { color: #333; margin-bottom: 5px; font-weight: bold; }
+        #chat { height: 300px; border: 1px solid #ddd; overflow-y: auto; margin: 15px 0; padding: 10px; text-align: left; background: #fafafa; border-radius: 8px; }
+        input[type="text"] { width: 70%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        button { padding: 12px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; }
+        .id-display { font-size: 32px; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .img-chat { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
+        .msg-container { margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Messagerie Wi-Fi</h2>
+    <h2>Messagerie & Photos</h2>
     
     <div id="setup">
-        <p>Ton code de connexion :</p>
+        <p>Ton code :</p>
         <div id="my-id" class="id-display">....</div>
-        
-        <p>Entrer le code de l'ami :</p>
-        <input type="text" id="peer-id" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 1234">
-        <button onclick="connecter()">SE CONNECTER</button>
+        <input type="text" id="friend-name" placeholder="Nom de l'ami">
+        <input type="text" id="peer-id" inputmode="numeric" placeholder="Code de l'ami">
+        <button onclick="connecter()" style="width:100%">SE CONNECTER</button>
     </div>
 
     <div id="chat-box" style="display:none;">
+        <h3 id="chat-with">Chat</h3>
         <div id="chat"></div>
-        <input type="text" id="message" placeholder="Ton message...">
-        <button onclick="envoyer()">ENVOYER</button>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="message" placeholder="Message...">
+            <button onclick="document.getElementById('file-input').click()">📷</button>
+            <button onclick="envoyer()">OK</button>
+        </div>
+        <input type="file" id="file-input" style="display:none" accept="image/*" onchange="envoyerImage(this)">
     </div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-    // Génération d'un ID de 4 chiffres aléatoires
     const monId = Math.floor(1000 + Math.random() * 9000).toString();
     const peer = new Peer(monId); 
     let conn;
+    let nomAmi = "Ami";
 
-    peer.on('open', (id) => {
-        document.getElementById('my-id').innerText = id;
-    });
-
-    // Écouter si quelqu'un se connecte à nous
-    peer.on('connection', (c) => {
+    peer.on('open', id => document.getElementById('my-id').innerText = id);
+    peer.on('connection', c => {
         conn = c;
+        nomAmi = prompt("Nom de l'arrivant ?", "Ami") || "Ami";
         activerInterfaceChat();
     });
 
     function connecter() {
         const idAmi = document.getElementById('peer-id').value;
-        if (!idAmi) return alert("Entrer un code !");
-        
+        nomAmi = document.getElementById('friend-name').value || "Ami";
+        if (!idAmi) return alert("Code manquant");
         conn = peer.connect(idAmi);
         activerInterfaceChat();
     }
@@ -64,35 +65,51 @@
     function activerInterfaceChat() {
         document.getElementById('setup').style.display = 'none';
         document.getElementById('chat-box').style.display = 'block';
+        document.getElementById('chat-with').innerText = "Avec " + nomAmi;
 
-        conn.on('data', (data) => {
-            afficherMessage(data, 'ami');
-        });
-
-        conn.on('open', () => {
-            afficherMessage("Connecté à l'ami !", 'systeme');
+        conn.on('data', data => {
+            if (data.type === 'image') {
+                afficherImage(data.content, 'ami');
+            } else {
+                afficherMessage(data, 'ami');
+            }
         });
     }
 
     function envoyer() {
         const input = document.getElementById('message');
-        const msg = input.value;
-        if (msg && conn) {
-            conn.send(msg);
-            afficherMessage(msg, 'moi');
+        if (input.value && conn) {
+            conn.send(input.value);
+            afficherMessage(input.value, 'moi');
             input.value = "";
         }
     }
 
+    function envoyerImage(input) {
+        const file = input.files[0];
+        if (!file || !conn) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const base64Image = e.target.result;
+            conn.send({ type: 'image', content: base64Image });
+            afficherImage(base64Image, 'moi');
+        };
+        reader.readAsDataURL(file);
+    }
+
     function afficherMessage(msg, type) {
         const chat = document.getElementById('chat');
-        const prefix = type === 'moi' ? "Moi : " : (type === 'ami' ? "Ami : " : "");
-        const classe = type === 'moi' ? "msg-moi" : "msg-ami";
-        
-        chat.innerHTML += `<div class="${classe}">${prefix}${msg}</div>`;
+        const color = type === 'moi' ? 'blue' : 'black';
+        chat.innerHTML += `<div class="msg-container"><b style="color:${color}">${type === 'moi' ? 'Moi' : nomAmi}:</b> ${msg}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function afficherImage(src, type) {
+        const chat = document.getElementById('chat');
+        const color = type === 'moi' ? 'blue' : 'black';
+        chat.innerHTML += `<div class="msg-container"><b style="color:${color}">${type === 'moi' ? 'Moi' : nomAmi}:</b><img src="${src}" class="img-chat"></div>`;
         chat.scrollTop = chat.scrollHeight;
     }
 </script>
-
 </body>
 </html>
