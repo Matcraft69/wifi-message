@@ -2,229 +2,241 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeoChat P2P</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NeoChat Luxe</title>
     <style>
-        :root { --p: #007AFF; --bg: #f2f2f7; --card: rgba(255, 255, 255, 0.8); --text: #1c1c1e; }
-        .dark-mode { --bg: #000000; --card: rgba(28, 28, 30, 0.8); --text: #ffffff; }
+        :root { --p: #007AFF; --bg: #f2f2f7; --card: rgba(255, 255, 255, 0.7); --text: #1c1c1e; --blur: blur(25px); }
+        .dark-mode { --bg: #000; --card: rgba(30, 30, 30, 0.7); --text: #fff; }
         
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); margin: 0; transition: 0.4s; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        .app-container { width: 100%; max-width: 420px; height: 95vh; background: var(--card); backdrop-filter: blur(20px); border-radius: 30px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); position: relative; }
-        
-        /* Header */
-        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff3b30; display: inline-block; margin-right: 5px; }
-        .online { background: #34c759; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100dvh; display: flex; justify-content: center; transition: 0.4s; overflow: hidden; }
+        .app { width: 100%; max-width: 500px; display: flex; flex-direction: column; background: var(--card); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); position: relative; }
 
-        /* Chat Zone */
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 15px; line-height: 1.4; position: relative; }
+        /* Header Moderne */
+        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid rgba(128,128,128,0.2); }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: #ff3b30; transition: 0.3s; }
+        .online { background: #34c759; box-shadow: 0 0 10px #34c759; }
+
+        /* Zone de Chat */
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+        .bubble { padding: 12px 16px; border-radius: 20px; max-width: 75%; font-size: 15px; animation: slideIn 0.3s ease-out; word-wrap: break-word; }
         .moi { align-self: flex-end; background: var(--p); color: white; border-bottom-right-radius: 4px; }
-        .ami { align-self: flex-start; background: #e9e9eb; color: #000; border-bottom-left-radius: 4px; }
-        .vocal-msg { display: flex; align-items: center; gap: 10px; }
+        .ami { align-self: flex-start; background: rgba(128,128,128,0.15); border-bottom-left-radius: 4px; }
+        
+        /* Panneaux Rétractables */
+        .panel { height: 0; overflow: hidden; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); background: rgba(0,0,0,0.03); }
+        .panel.open { height: 180px; border-bottom: 0.5px solid rgba(128,128,128,0.2); }
+        canvas { width: 100%; height: 140px; touch-action: none; }
 
-        /* Mini-Dessin Rétractable */
-        #draw-panel { height: 0; overflow: hidden; transition: 0.3s; background: #fff; }
-        #draw-panel.open { height: 150px; border-bottom: 1px solid #ddd; }
-        canvas { width: 100%; height: 120px; touch-action: none; }
+        /* Morpion Minimaliste */
+        #game-view { position: absolute; inset: 0; background: var(--bg); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.4s; }
+        .grid { display: grid; grid-template-columns: repeat(3, 90px); gap: 12px; }
+        .cell { width: 90px; height: 90px; background: rgba(128,128,128,0.1); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 35px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .cell:active { transform: scale(0.9); }
 
-        /* Morpion Overlay */
-        #game-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; border-radius: 30px; color: white; }
-        .grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; }
-        .cell { width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: bold; cursor: pointer; }
+        /* Input Bar */
+        .bar { padding: 15px; display: flex; gap: 10px; align-items: center; background: transparent; }
+        .input-group { flex: 1; background: rgba(128,128,128,0.1); border-radius: 25px; display: flex; align-items: center; padding: 2px 15px; }
+        input[type="text"] { flex: 1; border: none; background: transparent; padding: 10px; color: var(--text); outline: none; }
+        
+        .btn { width: 42px; height: 42px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: 0.3s; }
+        .btn-p { background: var(--p); color: white; }
+        .rec { background: #ff3b30 !important; animation: pulse 1s infinite; }
 
-        /* Controls */
-        .input-area { padding: 15px; display: flex; gap: 10px; align-items: center; }
-        input[type="text"] { flex: 1; padding: 12px; border-radius: 20px; border: none; background: rgba(0,0,0,0.05); color: var(--text); outline: none; }
-        .btn-round { width: 40px; height: 40px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .btn-vocal.rec { background: #ff3b30; animation: pulse 1s infinite; }
-
-        /* Settings Modal */
-        #settings { display: none; position: absolute; top: 70px; right: 20px; background: var(--card); padding: 15px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 50; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
-<div class="app-container" id="app">
+<div class="app">
     <header>
-        <div><span id="dot" class="status-dot"></span> <b id="user-title">NeoChat</b></div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-round" onclick="document.getElementById('draw-panel').classList.toggle('open')">🎨</button>
-            <button class="btn-round" onclick="inviteJeu()">🎮</button>
-            <button class="btn-round" onclick="toggleSettings()">⚙️</button>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div id="dot" class="dot"></div>
+            <b id="status-txt">Déconnecté</b>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn" onclick="togglePanel('draw-panel')">🎨</button>
+            <button class="btn" onclick="inviteGame()">🎮</button>
+            <button class="btn" onclick="toggleDarkMode()">🌓</button>
         </div>
     </header>
 
-    <div id="draw-panel">
+    <div id="draw-panel" class="panel">
         <canvas id="canvas"></canvas>
-        <button onclick="clearCanvas()" style="width:100%; font-size:10px;">Effacer</button>
+        <div style="display:flex; justify-content: space-around; padding: 5px;">
+            <button onclick="clearCanvas()" style="background:none; border:none; color:var(--p)">Effacer</button>
+            <input type="color" id="draw-color" value="#007AFF">
+        </div>
     </div>
 
-    <div id="game-overlay">
-        <h2 id="game-status">Morpion</h2>
+    <div id="game-view">
+        <h2 id="game-msg">Morpion</h2>
         <div class="grid" id="board"></div>
-        <button onclick="closeGame()" style="margin-top:20px; background:#ff3b30; padding:10px 20px; border-radius:10px;">Quitter</button>
+        <button onclick="closeGame()" style="margin-top:30px; background:none; border:none; color:#ff3b30; font-weight:bold;">QUITTER</button>
     </div>
 
     <div id="chat">
-        <div class="bubble ami">Bienvenue ! Partage ton code pour commencer.</div>
+        <div id="setup" style="text-align:center; padding-top:50px;">
+            <h1 id="my-id" style="font-size:45px; letter-spacing:8px; color:var(--p);">----</h1>
+            <p>Ton Code NeoChat</p>
+            <input type="text" id="peer-id" placeholder="Code ami" style="width:70%; background:rgba(128,128,128,0.1); border-radius:15px; margin-bottom:15px;">
+            <button class="btn-p" onclick="connecter()" style="width:75%; height:50px; border-radius:15px; margin:auto;">REJOINDRE</button>
+        </div>
     </div>
 
-    <div id="settings">
-        <input type="text" id="set-name" placeholder="Ton Pseudo" style="width:100px"><br><br>
-        <button onclick="toggleDarkMode()" style="width:100%">Mode Sombre</button><br><br>
-        <button onclick="alert('Historique effacé'); location.reload()" style="color:red">Réinitialiser</button>
-    </div>
-
-    <div id="setup-screen" style="padding:20px; text-align:center;">
-        <h1 id="my-id" style="font-size:40px; color:var(--p); margin:10px 0;">----</h1>
-        <input type="text" id="peer-id" placeholder="Code ami" style="width:80%; margin-bottom:10px;"><br>
-        <button onclick="connecter()" style="width:85%; background:var(--p); padding:15px; border-radius:15px;">SE CONNECTER</button>
-    </div>
-
-    <div class="input-area" id="controls" style="display:none">
-        <button class="btn-round" onclick="document.getElementById('file-input').click()">➕</button>
-        <input type="text" id="msg-input" placeholder="Message...">
-        <button id="vocal-btn" class="btn-round" style="background:#5856d6">🎤</button>
-        <button class="btn-round" onclick="sendMsg()" style="background:var(--p)">↑</button>
-        <input type="file" id="file-input" hidden onchange="sendImg(this)">
+    <div class="bar" id="controls" style="display:none">
+        <button class="btn" onclick="document.getElementById('file').click()">🖼️</button>
+        <div class="input-group">
+            <input type="text" id="msg-in" placeholder="Message...">
+            <button id="vocal-btn" style="background:none; border:none; font-size:20px;">🎤</button>
+        </div>
+        <button class="btn btn-p" onclick="send()">↑</button>
+        <input type="file" id="file" hidden onchange="sendImg(this)" accept="image/*">
     </div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-    const monId = Math.floor(1000 + Math.random() * 9000).toString();
-    const peer = new Peer(monId);
-    let conn, mediaRecorder, chunks = [], myName = "Moi", friendName = "Ami";
+    const myId = Math.floor(1000 + Math.random() * 9000).toString();
+    const peer = new Peer(myId);
+    let conn, mediaRecorder, chunks = [];
 
     peer.on('open', id => document.getElementById('my-id').innerText = id);
-    peer.on('connection', c => { conn = c; initChat(); });
+    peer.on('connection', c => { conn = c; start(); });
 
     function connecter() {
         conn = peer.connect(document.getElementById('peer-id').value);
-        initChat();
+        start();
     }
 
-    function initChat() {
-        document.getElementById('setup-screen').style.display = 'none';
+    function start() {
+        document.getElementById('setup').style.display = 'none';
         document.getElementById('controls').style.display = 'flex';
         document.getElementById('dot').classList.add('online');
-        
-        conn.on('data', data => {
-            if(data.type === 'vocal') addVocal(data.content, 'ami');
-            else if(data.type === 'draw') renderDraw(data);
-            else if(data.type === 'game-invite') { if(confirm("Prêt pour un Morpion ?")) { conn.send({type:'game-start'}); startGame(); } }
-            else if(data.type === 'game-start') startGame();
-            else if(data.type === 'game-move') updateGame(data.idx, 'O');
-            else addBubble(data, 'ami');
+        document.getElementById('status-txt').innerText = "En ligne";
+
+        conn.on('data', d => {
+            if(d.type === 'v') addVocal(d.c, 'ami');
+            else if(d.type === 'd') renderDraw(d);
+            else if(d.type === 'g-inv') { if(confirm("Partie de Morpion ?")) { conn.send({type:'g-ok'}); runGame(); } }
+            else if(d.type === 'g-ok') runGame();
+            else if(d.type === 'g-mv') updateBoard(d.i, 'O');
+            else addMsg(d, 'ami');
         });
     }
 
-    // --- CHAT & VOCAL ---
-    function addBubble(content, type) {
-        const chat = document.getElementById('chat');
-        chat.innerHTML += `<div class="bubble ${type}">${content}</div>`;
-        chat.scrollTop = chat.scrollHeight;
+    // --- MESSAGERIE & VOCAL ---
+    function addMsg(c, t) {
+        const h = document.getElementById('chat');
+        h.innerHTML += `<div class="bubble ${t}">${c}</div>`;
+        h.scrollTop = h.scrollHeight;
     }
 
-    function addVocal(url, type) {
-        const chat = document.getElementById('chat');
-        const id = 'v-' + Date.now();
-        chat.innerHTML += `<div class="bubble ${type} vocal-msg">
-            <button onclick="document.getElementById('${id}').play()" style="background:none; border:none; font-size:20px;">▶️</button>
-            <span>Audio</span>
+    function addVocal(url, t) {
+        const h = document.getElementById('chat');
+        const id = 'v'+Date.now();
+        h.innerHTML += `<div class="bubble ${t}">
+            <button onclick="document.getElementById('${id}').play()" style="background:none; border:none; color:inherit; font-size:18px; cursor:pointer;">▶️ RÉÉCOUTER</button>
             <audio id="${id}" src="${url}"></audio>
         </div>`;
-        chat.scrollTop = chat.scrollHeight;
+        h.scrollTop = h.scrollHeight;
     }
 
-    // --- ENREGISTREMENT VOCAL ---
     navigator.mediaDevices.getUserMedia({ audio: true }).then(s => {
         mediaRecorder = new MediaRecorder(s);
         mediaRecorder.ondataavailable = e => chunks.push(e.data);
         mediaRecorder.onstop = () => {
-            const blob = new Blob(chunks, { type: 'audio/ogg' });
             const reader = new FileReader();
             reader.onload = () => {
-                conn.send({type:'vocal', content: reader.result});
+                conn.send({type:'v', c: reader.result});
                 addVocal(reader.result, 'moi');
             };
-            reader.readAsDataURL(blob);
+            reader.readAsDataURL(new Blob(chunks));
             chunks = [];
         };
     });
 
     const vBtn = document.getElementById('vocal-btn');
-    vBtn.onmousedown = vBtn.ontouchstart = () => { vBtn.classList.add('rec'); mediaRecorder.start(); };
-    vBtn.onmouseup = vBtn.ontouchend = () => { vBtn.classList.remove('rec'); mediaRecorder.stop(); };
+    vBtn.onmousedown = vBtn.ontouchstart = () => { vBtn.parentElement.classList.add('rec'); mediaRecorder.start(); };
+    vBtn.onmouseup = vBtn.ontouchend = () => { vBtn.parentElement.classList.remove('rec'); mediaRecorder.stop(); };
 
-    // --- JEU MORPION ---
-    let cells = Array(9).fill(null);
-    function inviteJeu() { conn.send({type:'game-invite'}); }
-    function startGame() {
-        document.getElementById('game-overlay').style.display = 'flex';
-        const board = document.getElementById('board');
-        board.innerHTML = ''; cells.fill(null);
+    // --- MORPION OPTIMISÉ ---
+    let b = Array(9).fill(null);
+    function inviteGame() { conn.send({type:'g-inv'}); alert("Invitation envoyée !"); }
+    function runGame() {
+        document.getElementById('game-view').style.display = 'flex';
+        const g = document.getElementById('board');
+        g.innerHTML = ''; b.fill(null);
         for(let i=0; i<9; i++) {
             let c = document.createElement('div'); c.className = 'cell';
             c.onclick = () => {
-                if(!cells[i]) {
-                    cells[i] = 'X'; c.innerText = 'X';
-                    conn.send({type:'game-move', idx: i});
-                    checkWin();
+                if(!b[i]) {
+                    b[i] = 'X'; c.innerText = 'X'; c.style.color = 'var(--p)';
+                    conn.send({type:'g-mv', i: i});
+                    check();
                 }
             };
-            board.appendChild(c);
+            g.appendChild(c);
         }
     }
-
-    function updateGame(idx, symbol) {
-        cells[idx] = symbol;
-        document.querySelectorAll('.cell')[idx].innerText = symbol;
-        checkWin();
+    function updateBoard(i, s) {
+        b[i] = s;
+        const c = document.querySelectorAll('.cell')[i];
+        c.innerText = s; c.style.color = '#ff3b30';
+        check();
     }
-
-    function checkWin() {
-        const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        for(let l of lines) {
-            const [a,b,c] = l;
-            if(cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
-                alert(cells[a] === 'X' ? "TU AS GAGNÉ ! 🏆" : "TU AS PERDU... 💀");
-                return closeGame();
+    function check() {
+        const w = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        for(let q of w) {
+            const [x,y,z] = q;
+            if(b[x] && b[x]===b[y] && b[x]===b[z]) {
+                document.getElementById('game-msg').innerText = b[x]==='X' ? "VICTOIRE ! 🏆" : "DÉFAITE... 💀";
+                setTimeout(closeGame, 2000); return;
             }
         }
-        if(!cells.includes(null)) { alert("MATCH NUL ! 🤝"); closeGame(); }
+        if(!b.includes(null)) { document.getElementById('game-msg').innerText = "NUL ! 🤝"; setTimeout(closeGame, 2000); }
     }
+    function closeGame() { document.getElementById('game-view').style.display='none'; document.getElementById('game-msg').innerText="Morpion"; }
 
-    function closeGame() { document.getElementById('game-overlay').style.display = 'none'; }
-
-    // --- DESSIN ---
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    canvas.onmousedown = canvas.ontouchstart = (e) => { isDrawing = true; ctx.beginPath(); };
-    canvas.onmousemove = canvas.ontouchmove = (e) => {
-        if(!isDrawing) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX || e.touches[0].clientX) - rect.left;
-        const y = (e.clientY || e.touches[0].clientY) - rect.top;
-        ctx.lineTo(x, y); ctx.stroke();
-        conn.send({type:'draw', x, y});
+    // --- DESSIN FLUIDE ---
+    const cv = document.getElementById('canvas');
+    const cx = cv.getContext('2d');
+    let dr = false;
+    function togglePanel(id) { 
+        const p = document.getElementById(id); 
+        p.classList.toggle('open'); 
+        if(p.classList.contains('open')) { cv.width = cv.offsetWidth; cv.height = 140; cx.lineCap='round'; cx.lineWidth=3; }
+    }
+    cv.onmousedown = cv.ontouchstart = () => { dr = true; cx.beginPath(); };
+    cv.onmousemove = cv.ontouchmove = (e) => {
+        if(!dr) return;
+        const r = cv.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - r.left;
+        const y = (e.clientY || e.touches[0].clientY) - r.top;
+        const co = document.getElementById('draw-color').value;
+        cx.strokeStyle = co; cx.lineTo(x, y); cx.stroke();
+        conn.send({type:'d', x, y, co});
     };
-    window.onmouseup = window.ontouchend = () => { isDrawing = false; };
-    function renderDraw(d) { ctx.lineTo(d.x, d.y); ctx.stroke(); }
-    function clearCanvas() { ctx.clearRect(0,0,500,500); }
+    window.onmouseup = window.ontouchend = () => { dr = false; };
+    function renderDraw(d) { cx.strokeStyle = d.co; cx.lineTo(d.x, d.y); cx.stroke(); }
+    function clearCanvas() { cx.clearRect(0,0,cv.width,cv.height); }
 
-    // --- UTILITAIRES ---
-    function sendMsg() { 
-        const i = document.getElementById('msg-input'); 
-        if(i.value) { conn.send(i.value); addBubble(i.value, 'moi'); i.value = ""; }
-    }
-    function toggleSettings() { 
-        const s = document.getElementById('settings');
-        s.style.display = s.style.display === 'block' ? 'none' : 'block';
+    // --- SYSTÈME ---
+    function send() { 
+        const i = document.getElementById('msg-in'); 
+        if(i.value) { conn.send(i.value); addMsg(i.value, 'moi'); i.value = ""; }
     }
     function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
+    function sendImg(input) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+            conn.send(i.value); // Pour la cohérence on peut aussi envoyer des objets
+            addMsg(`<img src="${e.target.result}" style="width:100%; border-radius:10px;">`, 'moi');
+            conn.send(`<img src="${e.target.result}" style="width:100%; border-radius:10px;">`);
+        };
+        reader.readAsDataURL(file);
+    }
 </script>
 </body>
 </html>
