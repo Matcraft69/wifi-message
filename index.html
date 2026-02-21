@@ -2,113 +2,104 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeoChat Groupe - Code Visible</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Wi-Fi Personnalisé</title>
     <style>
-        :root { --p: #007AFF; --bg: #f2f2f7; --text: #1c1c1e; }
-        .dark-mode { --bg: #000; --text: #fff; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100dvh; display: flex; flex-direction: column; transition: 0.4s; }
-        
-        /* Zone de connexion très visible */
-        #setup { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
-        
-        .mon-code-box { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px; border: 2px solid var(--p); }
-        #my-id { font-size: 60px; font-weight: 900; color: var(--p); display: block; margin: 10px 0; letter-spacing: 5px; }
-
-        header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(128,128,128,0.2); }
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 15px; }
-        .moi { align-self: flex-end; background: var(--p); color: white; }
-        .ami { align-self: flex-start; background: rgba(128,128,128,0.2); }
-        .bar { padding: 10px; display: flex; gap: 8px; border-top: 1px solid rgba(128,128,128,0.2); }
-        input { padding: 12px; border-radius: 15px; border: 1px solid #ccc; outline: none; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        #chat { height: 250px; border: 1px solid #ddd; overflow-y: auto; margin: 15px 0; padding: 10px; text-align: left; background: #fafafa; border-radius: 8px; }
+        input { width: 85%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        button { padding: 12px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; width: 90%; }
+        .id-display { font-size: 32px; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 10px; border-radius: 8px; margin: 10px 0; letter-spacing: 5px; }
+        .msg-moi { color: #007bff; margin-bottom: 5px; }
+        .msg-ami { color: #333; margin-bottom: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="setup">
-    <div class="mon-code-box">
-        <span style="color: #666; text-transform: uppercase; font-size: 12px; font-weight: bold;">Ton Code NeoChat :</span>
-        <div id="my-id">CHARGEMENT...</div>
+<div class="card">
+    <h2>Messagerie Wi-Fi</h2>
+    
+    <div id="setup">
+        <p>Ton code :</p>
+        <div id="my-id" class="id-display">....</div>
+        
+        <p>Configuration :</p>
+        <input type="text" id="friend-name" placeholder="Nom de ton ami (ex: Lucas)">
+        <input type="text" id="peer-id" inputmode="numeric" pattern="[0-9]*" placeholder="Code de l'ami (ex: 1234)">
+        <button onclick="connecter()">SE CONNECTER</button>
     </div>
 
-    <div style="width: 100%; max-width: 300px;">
-        <input type="text" id="pseudo" placeholder="Ton pseudo" style="width: 100%; margin-bottom: 10px; box-sizing: border-box;">
-        <input type="text" id="peer-id" placeholder="Code d'un ami" style="width: 100%; margin-bottom: 15px; box-sizing: border-box;">
-        <button onclick="ajouterAmi()" style="width: 100%; padding: 15px; background: var(--p); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 16px; cursor: pointer;">LANCER LE CHAT</button>
+    <div id="chat-box" style="display:none;">
+        <h3 id="chat-with">Discussion</h3>
+        <div id="chat"></div>
+        <input type="text" id="message" placeholder="Ton message...">
+        <button onclick="envoyer()">ENVOYER</button>
     </div>
-</div>
-
-<header>
-    <b>Discussion de Groupe</b>
-    <button onclick="document.body.classList.toggle('dark-mode')" style="background:none; border:none; font-size:20px;">🌓</button>
-</header>
-
-<div id="chat"></div>
-
-<div class="bar" id="controls" style="display:none">
-    <input type="text" id="msg-in" placeholder="Message..." style="flex:1;">
-    <button onclick="sendGroup()" style="background:var(--p); color:white; border:none; border-radius:50%; width:40px; height:40px;">↑</button>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-    const myId = Math.floor(1000 + Math.random() * 9000).toString();
-    const peer = new Peer(myId);
-    let connections = {};
-    let monPseudo = "Moi";
+    const monId = Math.floor(1000 + Math.random() * 9000).toString();
+    const peer = new Peer(monId); 
+    let conn;
+    let nomAmi = "Ami";
 
-    // Affiche le code dès que PeerJS est prêt
-    peer.on('open', id => {
+    peer.on('open', (id) => {
         document.getElementById('my-id').innerText = id;
     });
 
-    peer.on('connection', conn => {
-        setupConn(conn);
+    peer.on('connection', (c) => {
+        conn = c;
+        // Si quelqu'un se connecte à nous, on lui demande son nom ou on garde "Ami"
+        nomAmi = prompt("Quelqu'un se connecte ! Quel est son nom ?", "Ami") || "Ami";
+        activerInterfaceChat();
     });
 
-    function ajouterAmi() {
+    function connecter() {
         const idAmi = document.getElementById('peer-id').value;
-        const p = document.getElementById('pseudo').value;
-        if(p) monPseudo = p;
+        const inputNom = document.getElementById('friend-name').value;
         
-        document.getElementById('setup').style.display = 'none';
-        document.getElementById('controls').style.display = 'flex';
-
-        if(idAmi) {
-            const conn = peer.connect(idAmi, { metadata: { pseudo: monPseudo } });
-            setupConn(conn);
-        }
+        if (inputNom) nomAmi = inputNom;
+        if (!idAmi) return alert("Entrer un code !");
+        
+        conn = peer.connect(idAmi);
+        activerInterfaceChat();
     }
 
-    function setupConn(conn) {
+    function activerInterfaceChat() {
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('chat-box').style.display = 'block';
+        document.getElementById('chat-with').innerText = "Chat avec " + nomAmi;
+
+        conn.on('data', (data) => {
+            afficherMessage(data, 'ami');
+        });
+
         conn.on('open', () => {
-            connections[conn.peer] = conn;
-            addMsg(`Système : ${conn.metadata?.pseudo || 'Un ami'} est là.`, 'ami');
-            
-            conn.on('data', data => {
-                if(data.type === 'text') addMsg(data.msg, 'ami', data.auteur);
-            });
+            afficherMessage("Connecté à " + nomAmi, 'systeme');
         });
     }
 
-    function sendGroup() {
-        const input = document.getElementById('msg-in');
-        if(!input.value) return;
-
-        for (let id in connections) {
-            connections[id].send({ type: 'text', msg: input.value, auteur: monPseudo });
+    function envoyer() {
+        const input = document.getElementById('message');
+        const msg = input.value;
+        if (msg && conn) {
+            conn.send(msg);
+            afficherMessage(msg, 'moi');
+            input.value = "";
         }
-        addMsg(input.value, 'moi', monPseudo);
-        input.value = "";
     }
 
-    function addMsg(txt, type, aut = "") {
+    function afficherMessage(msg, type) {
         const chat = document.getElementById('chat');
-        const prefix = aut && type === 'ami' ? `<b>${aut}:</b> ` : "";
-        chat.innerHTML += `<div class="bubble ${type}">${prefix}${txt}</div>`;
+        const prefix = type === 'moi' ? "Moi : " : (type === 'ami' ? nomAmi + " : " : "");
+        const classe = type === 'moi' ? "msg-moi" : "msg-ami";
+        
+        chat.innerHTML += `<div class="${classe}">${prefix}${msg}</div>`;
         chat.scrollTop = chat.scrollHeight;
     }
 </script>
+
 </body>
 </html>
