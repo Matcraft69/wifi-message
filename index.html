@@ -3,101 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Wi-Fi Réparé</title>
+    <title>Chat Wi-Fi - Version Survie</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        #chat { height: 250px; border: 1px solid #ddd; overflow-y: auto; margin: 15px 0; padding: 10px; text-align: left; background: #fafafa; border-radius: 8px; }
-        input { width: 85%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
-        button { padding: 12px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; width: 90%; }
-        .id-display { font-size: 32px; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 10px; border-radius: 8px; margin: 10px 0; letter-spacing: 5px; min-height: 40px; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        .id-display { font-size: 35px; font-weight: bold; color: #007bff; background: #eef2ff; padding: 15px; border-radius: 10px; margin: 15px 0; border: 2px dashed #007bff; }
+        #chat { height: 250px; border: 1px solid #ddd; overflow-y: auto; margin: 15px 0; padding: 10px; background: #fff; border-radius: 8px; text-align: left; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .status { font-size: 12px; color: #666; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Messagerie Wi-Fi</h2>
-    
+    <h2>Messagerie Directe</h2>
     <div id="setup">
-        <p>Ton code (copie-le) :</p>
-        <div id="my-id" class="id-display">Connexion...</div>
+        <div class="status" id="status">Statut : Connexion au serveur...</div>
+        <div id="my-id" class="id-display">....</div>
+        <button onclick="location.reload()" style="background:#6c757d; margin-bottom:20px; font-size:12px; width:auto; padding:5px 10px;">🔄 Réessayer</button>
         
-        <input type="text" id="friend-name" placeholder="Nom de ton ami">
         <input type="text" id="peer-id" placeholder="Code de l'ami">
         <button onclick="connecter()">SE CONNECTER</button>
     </div>
 
     <div id="chat-box" style="display:none;">
-        <h3 id="chat-with">Discussion</h3>
         <div id="chat"></div>
-        <input type="text" id="message" placeholder="Ton message...">
+        <input type="text" id="message" placeholder="Message...">
         <button onclick="envoyer()">ENVOYER</button>
     </div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-    // Création d'un ID au hasard
+    // On génère un ID
     const monId = Math.floor(1000 + Math.random() * 9000).toString();
     
-    // CONFIGURATION DE SECOURS : on force le serveur PeerJS public
-    const peer = new Peer(monId, {
-        host: '0.peerjs.com',
-        port: 443,
-        secure: true,
-        pingInterval: 5000
-    }); 
+    // On change de serveur pour essayer de contourner l'erreur réseau
+    let peer = new Peer(monId);
 
-    let conn;
-    let nomAmi = "Ami";
-
-    // Cette fonction s'active dès que le serveur donne le feu vert
     peer.on('open', (id) => {
         document.getElementById('my-id').innerText = id;
+        document.getElementById('status').innerText = "✅ Prêt ! Partage ton code.";
+        document.getElementById('status').style.color = "green";
     });
 
-    // Si ça rate, on affiche l'erreur pour comprendre
     peer.on('error', (err) => {
-        document.getElementById('my-id').innerText = "Erreur : " + err.type;
-        console.error(err);
+        console.error("Erreur détectée :", err.type);
+        document.getElementById('status').innerText = "❌ Erreur : " + err.type;
+        document.getElementById('status').style.color = "red";
+        
+        if(err.type === 'network') {
+            document.getElementById('my-id').innerText = "BLOQUÉ";
+            alert("Le réseau bloque la connexion. Essaie de désactiver le Wi-Fi et d'utiliser la 4G/5G.");
+        }
     });
 
     peer.on('connection', (c) => {
         conn = c;
-        nomAmi = prompt("Quel est le nom de l'ami ?", "Ami") || "Ami";
-        activerInterfaceChat();
+        setupChat();
     });
 
     function connecter() {
         const idAmi = document.getElementById('peer-id').value;
-        const inputNom = document.getElementById('friend-name').value;
-        if (inputNom) nomAmi = inputNom;
-        if (!idAmi) return alert("Code manquant !");
-        
+        if (!idAmi) return alert("Code vide");
         conn = peer.connect(idAmi);
-        activerInterfaceChat();
+        setupChat();
     }
 
-    function activerInterfaceChat() {
+    function setupChat() {
         document.getElementById('setup').style.display = 'none';
         document.getElementById('chat-box').style.display = 'block';
-        document.getElementById('chat-with').innerText = "Chat avec " + nomAmi;
-
         conn.on('data', (data) => {
-            const chat = document.getElementById('chat');
-            chat.innerHTML += `<div style="color:#333"><b>${nomAmi} :</b> ${data}</div>`;
-            chat.scrollTop = chat.scrollHeight;
+            document.getElementById('chat').innerHTML += `<div><b>Ami :</b> ${data}</div>`;
         });
     }
 
     function envoyer() {
-        const input = document.getElementById('message');
-        if (input.value && conn) {
-            conn.send(input.value);
-            const chat = document.getElementById('chat');
-            chat.innerHTML += `<div style="color:#007bff"><b>Moi :</b> ${input.value}</div>`;
-            chat.scrollTop = chat.scrollHeight;
-            input.value = "";
+        const i = document.getElementById('message');
+        if(i.value && conn) {
+            conn.send(i.value);
+            document.getElementById('chat').innerHTML += `<div style="color:blue"><b>Moi :</b> ${i.value}</div>`;
+            i.value = "";
         }
     }
 </script>
