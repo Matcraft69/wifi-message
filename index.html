@@ -3,55 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Wi-Fi & Dessin</title>
+    <title>Chat Multi-Fonctions</title>
     <style>
         :root { --bg: #f0f2f5; --card: white; --text: #333; --border: #ccc; }
         .dark-mode { --bg: #1a1a1a; --card: #2d2d2d; --text: #f0f0f0; --border: #444; }
-        
-        body { font-family: sans-serif; text-align: center; padding: 10px; background: var(--bg); color: var(--text); transition: 0.3s; margin:0; }
+        body { font-family: sans-serif; text-align: center; background: var(--bg); color: var(--text); margin:0; padding:10px; transition: 0.3s; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
-        
-        /* Zone de dessin */
-        #canvas-container { position: relative; background: white; border: 2px solid #007bff; border-radius: 8px; margin: 10px 0; touch-action: none; cursor: crosshair; }
-        canvas { display: block; width: 100%; height: 200px; }
-        .canvas-tools { display: flex; justify-content: space-between; padding: 5px; background: #eee; border-radius: 0 0 8px 8px; }
-
-        #chat { height: 200px; border: 1px solid var(--border); overflow-y: auto; margin: 10px 0; padding: 10px; text-align: left; background: var(--bg); border-radius: 8px; font-size: 14px; }
-        input[type="text"] { width: 60%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); }
-        button { padding: 10px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; }
-        .id-display { font-size: 28px; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 10px; border-radius: 8px; margin: 10px 0; }
-        .img-chat { max-width: 100%; border-radius: 8px; }
-        .header-btns { display: flex; justify-content: space-between; align-items: center; }
+        #chat { height: 200px; border: 1px solid var(--border); overflow-y: auto; margin: 10px 0; padding: 10px; text-align: left; background: var(--bg); border-radius: 8px; }
+        .id-display { font-size: 24px; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+        .controls { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 10px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: #007bff; color: white; }
+        .btn-vocal { background: #ffc107; color: black; }
+        .btn-vocal.recording { background: #dc3545; color: white; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        #game-zone { display: none; margin-top: 10px; border: 2px dashed #007bff; padding: 10px; border-radius: 8px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-width: 150px; margin: auto; }
+        .cell { width: 40px; height: 40px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; color: black; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div class="header-btns">
-        <h3>P2P Chat & Draw</h3>
-        <button onclick="toggleDarkMode()" style="background:#555;">🌙</button>
+    <div style="display:flex; justify-content: space-between;">
+        <button onclick="toggleDarkMode()">🌙</button>
+        <button onclick="choisirJeu()">🎮</button>
     </div>
-    
+
     <div id="setup">
         <div id="my-id" class="id-display">....</div>
-        <input type="text" id="friend-name" placeholder="Nom de l'ami">
-        <input type="text" id="peer-id" inputmode="numeric" placeholder="Code de l'ami">
-        <button onclick="connecter()" style="width:100%; margin-top:5px;">SE CONNECTER</button>
+        <input type="text" id="peer-id" inputmode="numeric" placeholder="Code ami" style="padding:10px; width:60%; border-radius:8px;">
+        <button onclick="connecter()">GO</button>
     </div>
 
     <div id="chat-box" style="display:none;">
-        <div id="canvas-container">
-            <canvas id="paint"></canvas>
-            <div class="canvas-tools">
-                <button onclick="clearCanvas()" style="background:#dc3545; padding:5px;">Effacer</button>
-                <span style="color:#333; font-size:12px;">Dessine ici !</span>
-                <input type="color" id="colorPicker" value="#007bff">
-            </div>
+        <div id="game-zone">
+            <h4 id="game-title">Jeu</h4>
+            <div id="morpion" class="grid"></div>
+            <button onclick="quitterJeu()" style="background:#666; font-size:10px; margin-top:5px;">Quitter</button>
         </div>
 
         <div id="chat"></div>
-        <div style="display:flex; gap:5px;">
-            <input type="text" id="message" placeholder="Message...">
+        
+        <div class="controls">
+            <input type="text" id="message" placeholder="Message..." style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--border);">
+            <button id="btn-mic" class="btn-vocal">🎤</button>
             <button onclick="document.getElementById('file-input').click()">📷</button>
             <button onclick="envoyer()">OK</button>
         </div>
@@ -62,143 +57,104 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
     const monId = Math.floor(1000 + Math.random() * 9000).toString();
-    const peer = new Peer(monId); 
-    let conn;
-    let nomAmi = "Ami";
-
-    // Configuration Canvas
-    const canvas = document.getElementById('paint');
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
+    const peer = new Peer(monId);
+    let conn, mediaRecorder, audioChunks = [];
 
     function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
 
     peer.on('open', id => document.getElementById('my-id').innerText = id);
-    peer.on('connection', c => {
-        conn = c;
-        nomAmi = prompt("Nom de l'ami ?", "Ami") || "Ami";
-        activerInterfaceChat();
-    });
+    peer.on('connection', c => { conn = c; setupConn(); });
 
     function connecter() {
         const idAmi = document.getElementById('peer-id').value;
-        nomAmi = document.getElementById('friend-name').value || "Ami";
-        if (!idAmi) return alert("Code manquant");
         conn = peer.connect(idAmi);
-        activerInterfaceChat();
+        setupConn();
     }
 
-    function activerInterfaceChat() {
+    function setupConn() {
         document.getElementById('setup').style.display = 'none';
         document.getElementById('chat-box').style.display = 'block';
-        resizeCanvas();
-
+        
         conn.on('data', data => {
-            if (data.type === 'draw') { drawFromPeer(data); }
-            else if (data.type === 'clear') { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-            else if (data.type === 'image') { afficherImage(data.content, 'ami'); }
+            if(data.type === 'vocal') { jouerAudio(data.content); }
+            else if(data.type === 'invite-jeu') { 
+                if(confirm("L'ami veut jouer à " + data.jeu + ". Accepter ?")) {
+                    conn.send({type: 'accept-jeu', jeu: data.jeu});
+                    lancerJeu(data.jeu);
+                }
+            }
+            else if(data.type === 'accept-jeu') { lancerJeu(data.jeu); }
+            else if(data.type === 'move-morpion') { updateMorpion(data.idx, 'O'); }
             else { afficherMessage(data, 'ami'); }
         });
     }
 
-    // --- LOGIQUE DE DESSIN ---
-    function resizeCanvas() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        ctx.lineWidth = 3;
-    }
-
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const ev = e.touches ? e.touches[0] : e;
-        return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
-    }
-
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('touchstart', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('touchmove', draw);
-    window.addEventListener('mouseup', stopDraw);
-    window.addEventListener('touchend', stopDraw);
-
-    function startDraw(e) {
-        drawing = true;
-        const pos = getPos(e);
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
-    }
-
-    function draw(e) {
-        if (!drawing) return;
-        const pos = getPos(e);
-        const color = document.getElementById('colorPicker').value;
-        
-        ctx.strokeStyle = color;
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-
-        if (conn) {
-            conn.send({ type: 'draw', x: pos.x, y: pos.y, color: color, state: 'moving' });
-        }
-    }
-
-    function stopDraw() { 
-        drawing = false; 
-        if(conn) conn.send({ type: 'draw', state: 'stop' });
-    }
-
-    function drawFromPeer(data) {
-        if (data.state === 'moving') {
-            ctx.strokeStyle = data.color;
-            ctx.lineTo(data.x, data.y);
-            ctx.stroke();
-        } else {
-            ctx.beginPath();
-        }
-    }
-
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (conn) conn.send({ type: 'clear' });
-    }
-
-    // --- LOGIQUE CHAT ---
-    function envoyer() {
-        const input = document.getElementById('message');
-        if (input.value && conn) {
-            conn.send(input.value);
-            afficherMessage(input.value, 'moi');
-            input.value = "";
-        }
-    }
-
-    function envoyerImage(input) {
-        const file = input.files[0];
-        if (!file || !conn) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            conn.send({ type: 'image', content: e.target.result });
-            afficherImage(e.target.result, 'moi');
+    // --- VOCAL ---
+    const btnMic = document.getElementById('btn-mic');
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
+            const reader = new FileReader();
+            reader.onload = () => {
+                conn.send({ type: 'vocal', content: reader.result });
+                afficherMessage("🎤 Vocal envoyé", 'moi');
+            };
+            reader.readAsDataURL(blob);
+            audioChunks = [];
         };
-        reader.readAsDataURL(file);
+    });
+
+    btnMic.onmousedown = btnMic.ontouchstart = () => { btnMic.classList.add('recording'); mediaRecorder.start(); };
+    btnMic.onmouseup = btnMic.ontouchend = () => { btnMic.classList.remove('recording'); mediaRecorder.stop(); };
+
+    function jouerAudio(src) {
+        const audio = new Audio(src);
+        audio.play();
+        afficherMessage("🎤 Vocal reçu (lecture...)", 'ami');
     }
 
+    // --- JEUX ---
+    function choisirJeu() {
+        const jeu = prompt("À quel jeu veux-tu jouer ? (Tape: Morpion)");
+        if(jeu && conn) conn.send({type: 'invite-jeu', jeu: jeu});
+    }
+
+    function lancerJeu(jeu) {
+        document.getElementById('game-zone').style.display = 'block';
+        if(jeu.toLowerCase() === 'morpion') {
+            const grid = document.getElementById('morpion');
+            grid.innerHTML = '';
+            for(let i=0; i<9; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.onclick = () => {
+                    if(cell.innerText === '') {
+                        cell.innerText = 'X';
+                        conn.send({type: 'move-morpion', idx: i});
+                    }
+                };
+                grid.appendChild(cell);
+            }
+        }
+    }
+
+    function updateMorpion(idx, sign) {
+        document.querySelectorAll('.cell')[idx].innerText = sign;
+    }
+
+    function quitterJeu() { document.getElementById('game-zone').style.display = 'none'; }
+
+    // --- BASE ---
+    function envoyer() {
+        const msg = document.getElementById('message').value;
+        if(msg && conn) { conn.send(msg); afficherMessage(msg, 'moi'); document.getElementById('message').value = ""; }
+    }
     function afficherMessage(msg, type) {
         const chat = document.getElementById('chat');
-        chat.innerHTML += `<div><b>${type === 'moi' ? 'Moi' : nomAmi}:</b> ${msg}</div>`;
+        chat.innerHTML += `<div><b>${type}:</b> ${msg}</div>`;
         chat.scrollTop = chat.scrollHeight;
-    }
-
-    function afficherImage(src, type) {
-        const chat = document.getElementById('chat');
-        chat.innerHTML += `<div><b>${type === 'moi' ? 'Moi' : nomAmi}:</b><img src="${src}" class="img-chat"><br><button onclick="telecharger('${src}')" style="font-size:10px; background:#28a745;">⬇️ Sauver</button></div>`;
-        chat.scrollTop = chat.scrollHeight;
-    }
-
-    function telecharger(src) {
-        const a = document.createElement('a'); a.href = src; a.download = "image.png"; a.click();
     }
 </script>
 </body>
