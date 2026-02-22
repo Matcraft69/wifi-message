@@ -3,97 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeoChat - Correction Design</title>
+    <title>NeoChat Luxe</title>
     <style>
         :root { --p: #007AFF; --bg: #f2f2f7; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Setup avec entrées bien proportionnées */
-        #setup { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .id-display { font-size: 40px; font-weight: bold; color: var(--p); margin-bottom: 20px; letter-spacing: 2px; }
-        
-        .input-box { 
-            width: 100%; 
-            max-width: 280px; 
-            padding: 12px 15px; 
-            border-radius: 12px; 
-            border: 1px solid #ccc; 
-            font-size: 18px; /* Texte plus grand */
-            text-align: center;
-            margin-bottom: 15px;
-            outline: none;
+        /* Fond animé pour le PC */
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100dvh; 
         }
 
-        button.main-btn { 
-            width: 100%; 
-            max-width: 280px; 
-            padding: 14px; 
-            background: var(--p); 
-            color: white; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            font-size: 16px;
-            cursor: pointer;
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* Chat */
+        /* Châssis du téléphone */
+        .phone { 
+            width: 360px; 
+            height: 700px; 
+            max-height: 90dvh;
+            background: var(--bg); 
+            border-radius: 40px; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4); 
+            border: 12px solid #1a1a1a; 
+            position: relative; 
+        }
+        
+        /* Encoche (Notch) */
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #1a1a1a;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            z-index: 100;
+        }
+
+        header { padding: 30px 15px 15px; background: white; text-align: center; border-bottom: 1px solid #ddd; font-weight: bold; font-size: 18px; }
+        
         #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 15px; position: relative; user-select: none; -webkit-user-select: none; }
-        .moi { align-self: flex-end; background: var(--p); color: white; }
-        .ami { align-self: flex-start; background: #e9e9eb; color: black; }
+        .bubble { padding: 10px 14px; border-radius: 18px; max-width: 75%; font-size: 14px; line-height: 1.4; position: relative; }
+        .moi { align-self: flex-end; background: var(--p); color: white; border-bottom-right-radius: 4px; }
+        .ami { align-self: flex-start; background: #e9e9eb; color: black; border-bottom-left-radius: 4px; }
         
-        /* Menu contextuel */
-        #menu { display: none; position: fixed; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 3000; overflow: hidden; border: 1px solid #ddd; width: 150px; }
-        #menu button { display: block; width: 100%; padding: 12px; border: none; background: white; font-size: 14px; cursor: pointer; border-bottom: 1px solid #eee; text-align: left; }
-        #menu button:last-child { color: red; border: none; }
+        .bar { padding: 15px; background: white; display: flex; gap: 10px; align-items: center; border-top: 1px solid #ddd; }
+        #msg-in { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #eee; outline: none; background: #f9f9f9; }
+        .send-btn { background: var(--p); color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-weight: bold; }
 
-        .bar { padding: 10px; background: white; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-        #msg-in { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-size: 16px; }
+        /* Setup moderne */
+        #setup { position: absolute; inset: 0; background: white; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+        .code-v { font-size: 45px; font-weight: 900; color: var(--p); margin: 20px 0; letter-spacing: 3px; }
+        .setup-in { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 15px; text-align: center; font-size: 16px; }
+
+        #menu { display: none; position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 300; width: 140px; border: 1px solid #eee; }
+        #menu button { display: block; width: 100%; padding: 12px; border: none; background: none; font-size: 14px; text-align: left; cursor: pointer; }
+        #menu button:first-child { border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
-<div id="setup">
-    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">TON CODE</div>
-    <div id="my-id" class="id-display">....</div>
+<div class="phone">
+    <div class="notch"></div>
     
-    <input type="text" id="peer-id" class="input-box" placeholder="Code de l'ami">
-    <button onclick="connecter()" class="main-btn">REJOINDRE LE CHAT</button>
-</div>
+    <div id="setup">
+        <h2 style="margin:0; font-size: 20px;">NeoChat</h2>
+        <p style="font-size: 12px; color: #888;">COMMENCE PAR PARTAGER TON CODE</p>
+        <div id="my-id" class="code-v">....</div>
+        <input type="text" id="peer-id" class="setup-in" placeholder="Code de l'ami">
+        <button onclick="connecter()" style="width:100%; background:var(--p); color:white; border:none; padding:15px; border-radius:12px; font-weight:bold; cursor:pointer;">REJOINDRE</button>
+    </div>
 
-<div id="chat"></div>
+    <header>Discussion</header>
 
-<div id="menu">
-    <button onclick="demanderModif()">📝 Modifier</button>
-    <button onclick="demanderSuppr()">🗑️ Supprimer</button>
-    <button onclick="fermerMenu()" style="color:#666">✕ Annuler</button>
-</div>
+    <div id="chat"></div>
 
-<div class="bar" id="controls" style="display:none">
-    <input type="text" id="msg-in" placeholder="Message...">
-    <button onclick="envoyer()" style="background:var(--p); color:white; border:none; border-radius:50%; width:40px; height:40px; font-weight:bold; cursor:pointer;">↑</button>
+    <div id="menu">
+        <button onclick="demanderModif()">📝 Modifier</button>
+        <button onclick="demanderSuppr()" style="color:red;">🗑️ Supprimer</button>
+    </div>
+
+    <div class="bar">
+        <input type="text" id="msg-in" placeholder="Message...">
+        <button class="send-btn" onclick="envoyer()">↑</button>
+    </div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
     const myId = Math.floor(1000 + Math.random() * 9000).toString();
     const peer = new Peer(myId);
-    let conn, msgCible = null, longPressTimer;
+    let conn, msgCible, timer;
 
     peer.on('open', id => document.getElementById('my-id').innerText = id);
     peer.on('connection', c => { conn = c; init(); });
 
     function connecter() {
         const idAmi = document.getElementById('peer-id').value;
-        if(!idAmi) return;
-        conn = peer.connect(idAmi);
-        init();
+        if(idAmi) { conn = peer.connect(idAmi); init(); }
     }
 
     function init() {
-        document.getElementById('setup').style.display = 'none';
-        document.getElementById('controls').style.display = 'flex';
+        document.getElementById('setup').style.fadeOut = "slow";
+        setTimeout(() => document.getElementById('setup').style.display = 'none', 300);
         conn.on('data', d => {
             if(d.type === 'edit') document.getElementById(d.id).innerText = d.txt;
             else if(d.type === 'del') document.getElementById(d.id).remove();
@@ -104,7 +131,7 @@
     function envoyer() {
         const i = document.getElementById('msg-in');
         if(!i.value) return;
-        const id = 'm-' + Date.now();
+        const id = 'm' + Date.now();
         conn.send({type:'msg', txt: i.value, id: id});
         addMsg(i.value, 'moi', id);
         i.value = "";
@@ -118,42 +145,39 @@
         
         if(type === 'moi') {
             div.onmousedown = div.ontouchstart = (e) => {
-                longPressTimer = setTimeout(() => ouvrirMenu(e, id), 600);
+                timer = setTimeout(() => {
+                    msgCible = id;
+                    const menu = document.getElementById('menu');
+                    menu.style.display = 'block';
+                    menu.style.left = '110px';
+                    menu.style.top = (e.target.offsetTop || e.touches[0].pageY - 100) + 'px';
+                }, 600);
             };
-            div.onmouseup = div.ontouchend = () => clearTimeout(longPressTimer);
+            div.onmouseup = div.ontouchend = () => clearTimeout(timer);
         }
 
         document.getElementById('chat').appendChild(div);
         document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
     }
 
-    function ouvrirMenu(e, id) {
-        msgCible = id;
-        const menu = document.getElementById('menu');
-        menu.style.display = 'block';
-        const x = (e.clientX || (e.touches ? e.touches[0].clientX : 100));
-        const y = (e.clientY || (e.touches ? e.touches[0].clientY : 100));
-        menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
-        menu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
-    }
-
     function demanderModif() {
         const el = document.getElementById(msgCible);
         const nvx = prompt("Modifier le message :", el.innerText);
-        if(nvx && nvx !== el.innerText) {
+        if(nvx) {
             el.innerText = nvx;
             conn.send({type:'edit', id: msgCible, txt: nvx});
         }
-        fermerMenu();
+        document.getElementById('menu').style.display = 'none';
     }
 
     function demanderSuppr() {
         document.getElementById(msgCible).remove();
         conn.send({type:'del', id: msgCible});
-        fermerMenu();
+        document.getElementById('menu').style.display = 'none';
     }
-
-    function fermerMenu() { document.getElementById('menu').style.display = 'none'; }
+    
+    // Fermer le menu si on clique ailleurs
+    window.onclick = (e) => { if(!e.target.classList.contains('bubble')) document.getElementById('menu').style.display = 'none'; }
 </script>
 </body>
 </html>
