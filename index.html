@@ -3,47 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeoChat - Modif & Suppr</title>
+    <title>NeoChat - Correction Design</title>
     <style>
         :root { --p: #007AFF; --bg: #f2f2f7; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
         
-        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 15px; position: relative; transition: 0.2s; user-select: none; -webkit-user-select: none; }
-        .moi { align-self: flex-end; background: var(--p); color: white; cursor: pointer; }
+        /* Setup avec entrées bien proportionnées */
+        #setup { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .id-display { font-size: 40px; font-weight: bold; color: var(--p); margin-bottom: 20px; letter-spacing: 2px; }
+        
+        .input-box { 
+            width: 100%; 
+            max-width: 280px; 
+            padding: 12px 15px; 
+            border-radius: 12px; 
+            border: 1px solid #ccc; 
+            font-size: 18px; /* Texte plus grand */
+            text-align: center;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        button.main-btn { 
+            width: 100%; 
+            max-width: 280px; 
+            padding: 14px; 
+            background: var(--p); 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* Chat */
+        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 80%; font-size: 15px; position: relative; user-select: none; -webkit-user-select: none; }
+        .moi { align-self: flex-end; background: var(--p); color: white; }
         .ami { align-self: flex-start; background: #e9e9eb; color: black; }
         
-        .bar { padding: 10px; background: white; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-        input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
-        
         /* Menu contextuel */
-        #menu { display: none; position: fixed; background: white; border-radius: 12px; shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 1000; overflow: hidden; border: 1px solid #ddd; }
-        #menu button { display: block; width: 100%; padding: 12px 20px; border: none; background: white; font-size: 14px; cursor: pointer; border-bottom: 1px solid #eee; }
+        #menu { display: none; position: fixed; background: white; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 3000; overflow: hidden; border: 1px solid #ddd; width: 150px; }
+        #menu button { display: block; width: 100%; padding: 12px; border: none; background: white; font-size: 14px; cursor: pointer; border-bottom: 1px solid #eee; text-align: left; }
         #menu button:last-child { color: red; border: none; }
-        #menu button:active { background: #f0f0f0; }
 
-        #setup { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .bar { padding: 10px; background: white; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+        #msg-in { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-size: 16px; }
     </style>
 </head>
 <body>
 
 <div id="setup">
-    <h1 id="my-id" style="font-size: 40px; color: var(--p);">....</h1>
-    <input type="text" id="peer-id" placeholder="Code ami" style="width:60%; margin-bottom:10px;">
-    <button onclick="connecter()" style="background:var(--p); color:white; border:none; padding:12px 25px; border-radius:10px;">REJOINDRE</button>
+    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">TON CODE</div>
+    <div id="my-id" class="id-display">....</div>
+    
+    <input type="text" id="peer-id" class="input-box" placeholder="Code de l'ami">
+    <button onclick="connecter()" class="main-btn">REJOINDRE LE CHAT</button>
 </div>
 
 <div id="chat"></div>
 
 <div id="menu">
-    <button onclick="demanderModif()">Modifier</button>
-    <button onclick="demanderSuppr()">Supprimer</button>
-    <button onclick="fermerMenu()">Annuler</button>
+    <button onclick="demanderModif()">📝 Modifier</button>
+    <button onclick="demanderSuppr()">🗑️ Supprimer</button>
+    <button onclick="fermerMenu()" style="color:#666">✕ Annuler</button>
 </div>
 
-<div class="bar" id="controls" style="visibility:hidden">
+<div class="bar" id="controls" style="display:none">
     <input type="text" id="msg-in" placeholder="Message...">
-    <button onclick="envoyer()" style="background:var(--p); color:white; border:none; border-radius:50%; width:40px; height:40px;">↑</button>
+    <button onclick="envoyer()" style="background:var(--p); color:white; border:none; border-radius:50%; width:40px; height:40px; font-weight:bold; cursor:pointer;">↑</button>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
@@ -56,13 +85,15 @@
     peer.on('connection', c => { conn = c; init(); });
 
     function connecter() {
-        conn = peer.connect(document.getElementById('peer-id').value);
+        const idAmi = document.getElementById('peer-id').value;
+        if(!idAmi) return;
+        conn = peer.connect(idAmi);
         init();
     }
 
     function init() {
         document.getElementById('setup').style.display = 'none';
-        document.getElementById('controls').style.visibility = 'visible';
+        document.getElementById('controls').style.display = 'flex';
         conn.on('data', d => {
             if(d.type === 'edit') document.getElementById(d.id).innerText = d.txt;
             else if(d.type === 'del') document.getElementById(d.id).remove();
@@ -85,7 +116,6 @@
         div.className = `bubble ${type}`;
         div.innerText = txt;
         
-        // Clic long (Mobile & Desktop)
         if(type === 'moi') {
             div.onmousedown = div.ontouchstart = (e) => {
                 longPressTimer = setTimeout(() => ouvrirMenu(e, id), 600);
@@ -101,16 +131,16 @@
         msgCible = id;
         const menu = document.getElementById('menu');
         menu.style.display = 'block';
-        const x = (e.clientX || (e.touches && e.touches[0].clientX)) || 100;
-        const y = (e.clientY || (e.touches && e.touches[0].clientY)) || 100;
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
+        const x = (e.clientX || (e.touches ? e.touches[0].clientX : 100));
+        const y = (e.clientY || (e.touches ? e.touches[0].clientY : 100));
+        menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+        menu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
     }
 
     function demanderModif() {
         const el = document.getElementById(msgCible);
         const nvx = prompt("Modifier le message :", el.innerText);
-        if(nvx) {
+        if(nvx && nvx !== el.innerText) {
             el.innerText = nvx;
             conn.send({type:'edit', id: msgCible, txt: nvx});
         }
@@ -118,10 +148,8 @@
     }
 
     function demanderSuppr() {
-        if(confirm("Supprimer ce message ?")) {
-            document.getElementById(msgCible).remove();
-            conn.send({type:'del', id: msgCible});
-        }
+        document.getElementById(msgCible).remove();
+        conn.send({type:'del', id: msgCible});
         fermerMenu();
     }
 
