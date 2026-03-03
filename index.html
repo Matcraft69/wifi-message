@@ -1,183 +1,119 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeoChat Wi-Fi</title>
-    <style>
-        :root { --p: #007AFF; --bg: #f2f2f7; }
-        
-        /* Fond animé pour le PC */
-        body { 
-            font-family: -apple-system, sans-serif; 
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100dvh; 
-        }
-
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Châssis du téléphone */
-        .phone { 
-            width: 360px; 
-            height: 700px; 
-            max-height: 90dvh;
-            background: var(--bg); 
-            border-radius: 40px; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4); 
-            border: 12px solid #1a1a1a; 
-            position: relative; 
-        }
-        
-        /* Encoche (Notch) */
-        .notch {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 150px;
-            height: 25px;
-            background: #1a1a1a;
-            border-bottom-left-radius: 15px;
-            border-bottom-right-radius: 15px;
-            z-index: 100;
-        }
-
-        header { padding: 30px 15px 15px; background: white; text-align: center; border-bottom: 1px solid #ddd; font-weight: bold; font-size: 18px; }
-        
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { padding: 10px 14px; border-radius: 18px; max-width: 75%; font-size: 14px; line-height: 1.4; position: relative; }
-        .moi { align-self: flex-end; background: var(--p); color: white; border-bottom-right-radius: 4px; }
-        .ami { align-self: flex-start; background: #e9e9eb; color: black; border-bottom-left-radius: 4px; }
-        
-        .bar { padding: 15px; background: white; display: flex; gap: 10px; align-items: center; border-top: 1px solid #ddd; }
-        #msg-in { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #eee; outline: none; background: #f9f9f9; }
-        .send-btn { background: var(--p); color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-weight: bold; }
-
-        /* Setup moderne */
-        #setup { position: absolute; inset: 0; background: white; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
-        .code-v { font-size: 45px; font-weight: 900; color: var(--p); margin: 20px 0; letter-spacing: 3px; }
-        .setup-in { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 15px; text-align: center; font-size: 16px; }
-
-        #menu { display: none; position: absolute; background: rgba(255,255,255,0.95); backdrop-filter: blur(5px); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 300; width: 140px; border: 1px solid #eee; }
-        #menu button { display: block; width: 100%; padding: 12px; border: none; background: none; font-size: 14px; text-align: left; cursor: pointer; }
-        #menu button:first-child { border-bottom: 1px solid #eee; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Moderne - Google Login</title>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    :root { --primary: #00a884; --bg: #111b21; --msg-bg: #202c33; --self: #005c4b; }
+    body { margin:0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; }
+    #auth { flex:1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
+    #chat { display: none; flex:1; flex-direction: column; }
+    #messages { flex:1; overflow-y: auto; padding: 16px; }
+    .msg { margin: 8px 0; padding: 10px 14px; border-radius: 12px; max-width: 75%; word-wrap: break-word; }
+    .msg.self { background: var(--self); margin-left: auto; }
+    .msg.other { background: var(--msg-bg); }
+    #input-area { display: flex; padding: 12px; background: #202c33; }
+    #message { flex:1; background: #2a3942; border: none; color: white; padding: 12px; border-radius: 24px; margin-right: 8px; }
+    button { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 24px; cursor: pointer; }
+    header { background: #111b21; padding: 12px; text-align: center; font-weight: bold; }
+    #user { position: absolute; top: 12px; right: 16px; font-size: 0.9rem; opacity: 0.8; }
+  </style>
 </head>
 <body>
 
-<div class="phone">
-    <div class="notch"></div>
-    
-    <div id="setup">
-        <h2 style="margin:0; font-size: 20px;">NeoChat</h2>
-        <p style="font-size: 12px; color: #888;">COMMENCE PAR PARTAGER TON CODE</p>
-        <div id="my-id" class="code-v">....</div>
-        <input type="text" id="peer-id" class="setup-in" placeholder="Code de l'ami">
-        <button onclick="connecter()" style="width:100%; background:var(--p); color:white; border:none; padding:15px; border-radius:12px; font-weight:bold; cursor:pointer;">REJOINDRE</button>
+  <div id="auth">
+    <h2>Chat sécurisé avec Google</h2>
+    <button id="google-login">Se connecter avec Google</button>
+  </div>
+
+  <div id="chat">
+    <header>Chat en temps réel <span id="user"></span></header>
+    <div id="messages"></div>
+    <div id="input-area">
+      <input id="message" placeholder="Écris un message..." autocomplete="off"/>
+      <button id="send">Envoyer</button>
     </div>
+  </div>
 
-    <header>Discussion</header>
+  <script>
+    // Remplace par TES vraies config Firebase (crée un projet sur console.firebase.google.com)
+    const firebaseConfig = {
+      apiKey: "AIzaSy...ta-clef-api-ici...",
+      authDomain: "ton-projet.firebaseapp.com",
+      projectId: "ton-projet",
+      storageBucket: "ton-projet.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef123456"
+    };
 
-    <div id="chat"></div>
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    <div id="menu">
-        <button onclick="demanderModif()">📝 Modifier</button>
-        <button onclick="demanderSuppr()" style="color:red;">🗑️ Supprimer</button>
-    </div>
+    const loginBtn = document.getElementById('google-login');
+    const chatDiv = document.getElementById('chat');
+    const authDiv = document.getElementById('auth');
+    const userSpan = document.getElementById('user');
+    const messagesDiv = document.getElementById('messages');
+    const input = document.getElementById('message');
+    const sendBtn = document.getElementById('send');
 
-    <div class="bar">
-        <input type="text" id="msg-in" placeholder="Message...">
-        <button class="send-btn" onclick="envoyer()">↑</button>
-    </div>
-</div>
+    // Connexion Google
+    loginBtn.addEventListener('click', () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .catch(err => alert("Erreur : " + err.message));
+    });
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script>
-    const myId = Math.floor(1000 + Math.random() * 9000).toString();
-    const peer = new Peer(myId);
-    let conn, msgCible, timer;
+    // Écoute l'état de connexion
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        authDiv.style.display = 'none';
+        chatDiv.style.display = 'flex';
+        userSpan.textContent = `Connecté : ${user.displayName || user.email}`;
 
-    peer.on('open', id => document.getElementById('my-id').innerText = id);
-    peer.on('connection', c => { conn = c; init(); });
+        // Charger + écouter les messages en temps réel
+        db.collection('messages')
+          .orderBy('createdAt', 'asc')
+          .onSnapshot(snapshot => {
+            messagesDiv.innerHTML = '';
+            snapshot.forEach(doc => {
+              const msg = doc.data();
+              const div = document.createElement('div');
+              div.className = `msg ${msg.uid === user.uid ? 'self' : 'other'}`;
+              div.innerHTML = `<strong>${msg.name || 'Anonyme'} :</strong> ${msg.text}`;
+              messagesDiv.appendChild(div);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          });
+      } else {
+        authDiv.style.display = 'flex';
+        chatDiv.style.display = 'none';
+      }
+    });
 
-    function connecter() {
-        const idAmi = document.getElementById('peer-id').value;
-        if(idAmi) { conn = peer.connect(idAmi); init(); }
+    // Envoyer message
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      const user = auth.currentUser;
+      db.collection('messages').add({
+        text,
+        name: user.displayName || user.email.split('@')[0],
+        uid: user.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      input.value = '';
     }
-
-    function init() {
-        document.getElementById('setup').style.fadeOut = "slow";
-        setTimeout(() => document.getElementById('setup').style.display = 'none', 300);
-        conn.on('data', d => {
-            if(d.type === 'edit') document.getElementById(d.id).innerText = d.txt;
-            else if(d.type === 'del') document.getElementById(d.id).remove();
-            else addMsg(d.txt, 'ami', d.id);
-        });
-    }
-
-    function envoyer() {
-        const i = document.getElementById('msg-in');
-        if(!i.value) return;
-        const id = 'm' + Date.now();
-        conn.send({type:'msg', txt: i.value, id: id});
-        addMsg(i.value, 'moi', id);
-        i.value = "";
-    }
-
-    function addMsg(txt, type, id) {
-        const div = document.createElement('div');
-        div.id = id;
-        div.className = `bubble ${type}`;
-        div.innerText = txt;
-        
-        if(type === 'moi') {
-            div.onmousedown = div.ontouchstart = (e) => {
-                timer = setTimeout(() => {
-                    msgCible = id;
-                    const menu = document.getElementById('menu');
-                    menu.style.display = 'block';
-                    menu.style.left = '110px';
-                    menu.style.top = (e.target.offsetTop || e.touches[0].pageY - 100) + 'px';
-                }, 600);
-            };
-            div.onmouseup = div.ontouchend = () => clearTimeout(timer);
-        }
-
-        document.getElementById('chat').appendChild(div);
-        document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
-    }
-
-    function demanderModif() {
-        const el = document.getElementById(msgCible);
-        const nvx = prompt("Modifier le message :", el.innerText);
-        if(nvx) {
-            el.innerText = nvx;
-            conn.send({type:'edit', id: msgCible, txt: nvx});
-        }
-        document.getElementById('menu').style.display = 'none';
-    }
-
-    function demanderSuppr() {
-        document.getElementById(msgCible).remove();
-        conn.send({type:'del', id: msgCible});
-        document.getElementById('menu').style.display = 'none';
-    }
-    
-    // Fermer le menu si on clique ailleurs
-    window.onclick = (e) => { if(!e.target.classList.contains('bubble')) document.getElementById('menu').style.display = 'none'; }
-</script>
+  </script>
 </body>
 </html>
